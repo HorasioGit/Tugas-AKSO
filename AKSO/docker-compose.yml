@@ -1,0 +1,97 @@
+version: '3.9'
+
+services:
+  web:
+    image: nginx:latest
+    container_name: nginx_server
+    ports:
+      - "8080:80"
+    volumes:
+      - web_data:/usr/share/nginx/html
+    networks:
+      - app_network
+
+  database:
+    image: postgres:latest
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: exampledb
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  message_queue:
+    image: redis:latest
+    container_name: redis_queue
+    ports:
+      - "6379:6379"
+    networks:
+      - app_network
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress_site
+    environment:
+      WORDPRESS_DB_HOST: database:5432
+      WORDPRESS_DB_USER: admin
+      WORDPRESS_DB_PASSWORD: secret
+      WORDPRESS_DB_NAME: exampledb
+    ports:
+      - "8081:80"
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - app_network
+
+  php:
+    build: .
+    container_name: php_server
+    volumes:
+      - php_data:/var/www/html
+    networks:
+      - app_network
+
+  adminer:
+    image: adminer:latest
+    container_name: adminer_db_ui
+    ports:
+      - "8082:8080"
+    networks:
+      - app_network
+
+  memcached:
+    image: memcached:latest
+    container_name: memcached_server
+    ports:
+      - "11211:11211"
+    networks:
+      - app_network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    container_name: elasticsearch_service
+    environment:
+      discovery.type: single-node
+    ports:
+      - "9200:9200"
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  web_data:
+  db_data:
+  wordpress_data:
+  php_data:
+
+configs:
+  nginx_config:
+    file: ./nginx.conf
